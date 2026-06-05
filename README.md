@@ -21,11 +21,102 @@ Policies are written in Kubernetes YAML — no custom code required.
 
 ---
 
+## Architecture
+
+### Kyverno Request Flow
+
+```mermaid
+flowchart LR
+    dev[Developer]
+    api[Kubernetes API Server]
+    kyverno[Kyverno]
+
+    validate[Validate]
+    mutate[Mutate]
+    verify[VerifyImages]
+
+    allow[Allow]
+    deny[Reject]
+    pod[Pod Created]
+
+    dev --> api
+    api --> kyverno
+
+    kyverno --> validate
+    kyverno --> mutate
+    kyverno --> verify
+
+    validate --> allow
+    validate --> deny
+    mutate --> allow
+    verify --> allow
+    verify --> deny
+
+    allow --> pod
+```
+
+Developer creates Pod → API Server sends request to Kyverno → Kyverno checks policies → Allow or Reject.
+
+### Kyverno Features
+
+```mermaid
+flowchart TB
+    kyverno[Kyverno]
+
+    kyverno --> validate[Validate]
+    kyverno --> mutate[Mutate]
+    kyverno --> generate[Generate]
+    kyverno --> verify[VerifyImages]
+
+    validate --> v1[Require Labels]
+    validate --> v2[Require Resources]
+    validate --> v3[Block Privileged Containers]
+
+    mutate --> m1["Add team=devops"]
+
+    generate --> g1[Auto Create ConfigMap]
+
+    verify --> i1[Allow Signed Images]
+    verify --> i2[Block Unsigned Images]
+```
+
+### Audit vs Enforce
+
+```mermaid
+flowchart LR
+    badPod[Bad Pod]
+
+    badPod --> audit[Audit Mode]
+    badPod --> enforce[Enforce Mode]
+
+    audit --> created[Pod Created]
+    audit --> report[Policy Report]
+
+    enforce --> rejected[Pod Rejected]
+```
+
+### Production Recommendation
+
+```mermaid
+flowchart TB
+    start[Start Audit Mode]
+    fix[Fix Violations]
+    enforce[Move to Enforce]
+    ha["Run 2+ Kyverno Replicas"]
+
+    start --> fix
+    fix --> enforce
+    enforce --> ha
+```
+
+Start with Audit → fix problems → enable Enforce → run HA in production.
+
+---
+
 ## Repository Structure
 
 ```
 .
-├── assets/            # Architecture diagrams
 ├── policies/          # Kyverno ClusterPolicy manifests
 ├── demos/             # Sample Pods for testing policies
 └── notes/             # Rollout plan, baseline docs, one-pager
@@ -177,48 +268,6 @@ kubectl apply -f demos/verify-unsigned.yaml  # blocked
 ```
 
 Uses Kyverno official test images (`ghcr.io/kyverno/test-verify-image`). In production, connect this to your CI/CD Cosign signing pipeline.
-
----
-
-## Architecture
-
-### Diagram 1: Kyverno Request Flow
-
-![Kyverno Request Flow](assets/kyverno-request-flow.png)
-
-Developer creates Pod → API Server sends request to Kyverno → Kyverno checks policies → Allow or Reject.
-
----
-
-### Diagram 2: Kyverno Features
-
-![Kyverno Features](assets/kyverno-features.png)
-
-| Type | What it does |
-|------|--------------|
-| **Validate** | Check rules |
-| **Mutate** | Modify resources |
-| **Generate** | Create resources automatically |
-| **VerifyImages** | Verify image signatures |
-
----
-
-### Diagram 3: Audit vs Enforce
-
-![Audit vs Enforce](assets/audit-vs-enforce.png)
-
-| Mode | Behavior |
-|------|----------|
-| **Audit** | Allow Pod + report violation |
-| **Enforce** | Reject Pod |
-
----
-
-### Diagram 4: Production Recommendation
-
-![Production Recommendation](assets/production-recommendation.png)
-
-Start with Audit → fix problems → enable Enforce → run HA in production.
 
 ---
 

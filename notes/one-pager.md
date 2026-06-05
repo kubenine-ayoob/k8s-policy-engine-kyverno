@@ -19,7 +19,35 @@ Think of it as a **security guard at the door**:
 
 ### Request flow
 
-![Kyverno Request Flow](../assets/kyverno-request-flow.png)
+```mermaid
+flowchart LR
+    dev[Developer]
+    api[Kubernetes API Server]
+    kyverno[Kyverno]
+
+    validate[Validate]
+    mutate[Mutate]
+    verify[VerifyImages]
+
+    allow[Allow]
+    deny[Reject]
+    pod[Pod Created]
+
+    dev --> api
+    api --> kyverno
+
+    kyverno --> validate
+    kyverno --> mutate
+    kyverno --> verify
+
+    validate --> allow
+    validate --> deny
+    mutate --> allow
+    verify --> allow
+    verify --> deny
+
+    allow --> pod
+```
 
 Developer creates Pod → API Server sends request to Kyverno → Kyverno checks policies → Allow or Reject.
 
@@ -34,14 +62,26 @@ Developer creates Pod → API Server sends request to Kyverno → Kyverno checks
 | **generate** | Create new resources automatically | New namespace → ConfigMap created |
 | **verifyImages** | Check image is signed (Cosign) | Signed image OK, unsigned image blocked |
 
-![Kyverno Features](../assets/kyverno-features.png)
+```mermaid
+flowchart TB
+    kyverno[Kyverno]
 
-| Type | What it does |
-|------|--------------|
-| **Validate** | Check rules |
-| **Mutate** | Modify resources |
-| **Generate** | Create resources automatically |
-| **VerifyImages** | Verify image signatures |
+    kyverno --> validate[Validate]
+    kyverno --> mutate[Mutate]
+    kyverno --> generate[Generate]
+    kyverno --> verify[VerifyImages]
+
+    validate --> v1[Require Labels]
+    validate --> v2[Require Resources]
+    validate --> v3[Block Privileged Containers]
+
+    mutate --> m1["Add team=devops"]
+
+    generate --> g1[Auto Create ConfigMap]
+
+    verify --> i1[Allow Signed Images]
+    verify --> i2[Block Unsigned Images]
+```
 
 ---
 
@@ -54,12 +94,18 @@ Developer creates Pod → API Server sends request to Kyverno → Kyverno checks
 
 **Start with Audit.** Switch to Enforce only after teams fix their workloads.
 
-![Audit vs Enforce](../assets/audit-vs-enforce.png)
+```mermaid
+flowchart LR
+    badPod[Bad Pod]
 
-| Mode | Behavior |
-|------|----------|
-| **Audit** | Allow Pod + report violation |
-| **Enforce** | Reject Pod |
+    badPod --> audit[Audit Mode]
+    badPod --> enforce[Enforce Mode]
+
+    audit --> created[Pod Created]
+    audit --> report[Policy Report]
+
+    enforce --> rejected[Pod Rejected]
+```
 
 ---
 
@@ -140,7 +186,17 @@ Kyverno sits in the **request path**. If Kyverno is down:
 
 ## Rollout summary
 
-![Production Recommendation](../assets/production-recommendation.png)
+```mermaid
+flowchart TB
+    start[Start Audit Mode]
+    fix[Fix Violations]
+    enforce[Move to Enforce]
+    ha["Run 2+ Kyverno Replicas"]
+
+    start --> fix
+    fix --> enforce
+    enforce --> ha
+```
 
 Start with Audit → fix problems → enable Enforce → run HA in production.
 
