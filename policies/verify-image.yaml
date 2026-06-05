@@ -1,0 +1,41 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image
+  annotations:
+    policies.kyverno.io/title: Verify Image Signatures
+    policies.kyverno.io/category: Software Supply Chain Security
+    policies.kyverno.io/description: >-
+      Only allow signed images from ghcr.io/kyverno/test-verify-image.
+      Uses Kyverno's official test image and public key for demo purposes.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+  failurePolicy: Fail
+  rules:
+  - name: verify-image
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - ayoob-kyverno
+    verifyImages:
+    - imageReferences:
+      - "ghcr.io/kyverno/test-verify-image*"
+      failureAction: Enforce
+      mutateDigest: true
+      attestors:
+      - count: 1
+        entries:
+        - keys:
+            publicKeys: |-
+              -----BEGIN PUBLIC KEY-----
+              MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE8nXRh950IZbRj8Ra/N9sbqOPZrfM
+              5/KAQN0/KjHcorm/J5yctVd7iEcnessRQjU917hmKO6JWVGHpDguIyakZA==
+              -----END PUBLIC KEY-----
+            rekor:
+              ignoreTlog: true
+              url: https://rekor.sigstore.dev

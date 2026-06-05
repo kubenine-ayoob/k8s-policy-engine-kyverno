@@ -1,0 +1,19 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-team-label
+spec:
+  rules:
+  - name: add-team-label
+    match:
+      any:
+      - resources:
+          kinds:
+          - Pod
+          namespaces:
+          - ayoob-kyverno
+    mutate:
+      patchStrategicMerge:
+        metadata:
+          labels:
+            team: devops
