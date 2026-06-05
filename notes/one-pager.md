@@ -17,6 +17,12 @@ Think of it as a **security guard at the door**:
 
 **We tested it on:** k3s `v1.34.2`, Kyverno `v1.18.1`, namespace `ayoob-kyverno`
 
+### Request flow
+
+![Kyverno Request Flow](../assets/kyverno-request-flow.png)
+
+Developer creates Pod → API Server sends request to Kyverno → Kyverno checks policies → Allow or Reject.
+
 ---
 
 ## What can Kyverno do? (4 types)
@@ -28,6 +34,15 @@ Think of it as a **security guard at the door**:
 | **generate** | Create new resources automatically | New namespace → ConfigMap created |
 | **verifyImages** | Check image is signed (Cosign) | Signed image OK, unsigned image blocked |
 
+![Kyverno Features](../assets/kyverno-features.png)
+
+| Type | What it does |
+|------|--------------|
+| **Validate** | Check rules |
+| **Mutate** | Modify resources |
+| **Generate** | Create resources automatically |
+| **VerifyImages** | Verify image signatures |
+
 ---
 
 ## Audit vs Enforce
@@ -38,6 +53,13 @@ Think of it as a **security guard at the door**:
 | **Enforce** | Bad Pod is **blocked** with an error |
 
 **Start with Audit.** Switch to Enforce only after teams fix their workloads.
+
+![Audit vs Enforce](../assets/audit-vs-enforce.png)
+
+| Mode | Behavior |
+|------|----------|
+| **Audit** | Allow Pod + report violation |
+| **Enforce** | Reject Pod |
 
 ---
 
@@ -117,6 +139,10 @@ Kyverno sits in the **request path**. If Kyverno is down:
 ---
 
 ## Rollout summary
+
+![Production Recommendation](../assets/production-recommendation.png)
+
+Start with Audit → fix problems → enable Enforce → run HA in production.
 
 1. **Week 1–2:** Install Kyverno, apply policies in Audit
 2. **Week 3:** Teams fix violations from PolicyReports
