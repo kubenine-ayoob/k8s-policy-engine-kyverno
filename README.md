@@ -4,6 +4,8 @@ Hands-on Kubernetes policy management with [Kyverno](https://kyverno.io/) — va
 
 Tested on **k3s v1.34.2** with **Kyverno v1.18.1**.
 
+> **Documentation:** Agent entry [`CLAUDE.md`](CLAUDE.md) · Full guide [`docs/complete-guide.md`](docs/complete-guide.md) · Operations [`docs/runbook.md`](docs/runbook.md) · PoC results [`docs/poc-report.md`](docs/poc-report.md)
+
 ---
 
 ## What is Kyverno?

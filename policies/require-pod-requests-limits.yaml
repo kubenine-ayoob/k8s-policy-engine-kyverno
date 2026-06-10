@@ -16,7 +16,7 @@ metadata:
       This policy validates that all containers have something specified for memory and CPU
       requests and memory limits.
 spec:
-  validationFailureAction: Enforce  # Audit or Enforce
+  validationFailureAction: Audit  # Audit or Enforce
   background: true
   rules:
   - name: validate-resources

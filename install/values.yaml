@@ -1,0 +1,55 @@
+# Kyverno Helm values — kubenine-intern (PoC) / kubenine (prod)
+# Chart: kyverno/kyverno 3.2.6 → app v1.18.1
+# Install: helmfile sync (from kyverno/)
+
+admissionController:
+  replicas: 3
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: admission-controller
+          topologyKey: kubernetes.io/hostname
+
+backgroundController:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+reportsController:
+  replicas: 2
+
+cleanupController:
+  replicas: 1
+
+config:
+  webhooks:
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+            - kyverno
+
+features:
+  policyExceptions:
+    enabled: true
+    namespace: kyverno
+
+metricsService:
+  create: true
+
+serviceMonitor:
+  enabled: false   # set true when Prometheus Operator is present

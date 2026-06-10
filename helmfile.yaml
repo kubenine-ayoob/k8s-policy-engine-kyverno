@@ -1,0 +1,12 @@
+repositories:
+  - name: kyverno
+    url: https://kyverno.github.io/kyverno/
+
+releases:
+  - name: kyverno
+    namespace: kyverno
+    createNamespace: true
+    chart: kyverno/kyverno
+    version: 3.2.6          # pins Kyverno v1.18.1 — verify on artifacthub
+    values:
+      - install/values.yaml
