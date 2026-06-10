@@ -7,6 +7,6 @@ releases:
     namespace: kyverno
     createNamespace: true
     chart: kyverno/kyverno
-    version: 3.2.6          # pins Kyverno v1.18.1 — verify on artifacthub
+    version: 3.8.1
     values:
       - install/values.yaml
