@@ -14,7 +14,7 @@ metadata:
       application Pod. This policy validates that the image specifies a tag and that it
       is not called `latest`.
 spec:
-  validationFailureAction: Audit  # Audit or Enforce
+  validationFailureAction: Enforce  # Audit or Enforce
   background: true
   rules:
   - name: require-image-tag
