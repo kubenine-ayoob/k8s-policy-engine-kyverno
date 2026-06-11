@@ -1,6 +1,11 @@
 # Kyverno Helm values — kubenine-intern (PoC) / kubenine (prod)
-# Chart: kyverno/kyverno 3.2.6 → app v1.18.1
+# Chart: kyverno/kyverno 3.8.1 → app v1.18.1
 # Install: helmfile sync (from kyverno/)
+# Cluster: Civo K3s v1.34.2+k3s1
+#
+# Webhook failurePolicy: Fail (chart default — not configurable per Audit/Enforce).
+# Mitigation: 3 admission replicas + PDB. Document blast radius in PoC; do not set
+# features.forceFailurePolicyIgnore except during documented emergencies.
 
 admissionController:
   replicas: 3
@@ -18,6 +23,16 @@ admissionController:
             matchLabels:
               app.kubernetes.io/component: admission-controller
           topologyKey: kubernetes.io/hostname
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+  featuresOverride:
+    admissionReports:
+      backPressureThreshold: 1000
+  metricsService:
+    create: true
+  serviceMonitor:
+    enabled: false
 
 backgroundController:
   replicas: 2
@@ -27,29 +42,61 @@ backgroundController:
       memory: 128Mi
     limits:
       memory: 256Mi
+  metricsService:
+    create: true
+  serviceMonitor:
+    enabled: false
 
 reportsController:
   replicas: 2
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  metricsService:
+    create: true
+  serviceMonitor:
+    enabled: false
 
 cleanupController:
   replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  metricsService:
+    create: true
+  serviceMonitor:
+    enabled: false
 
 config:
+  excludeKyvernoNamespace: true
   webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
-            - kyverno
+            - kube-system
 
 features:
   policyExceptions:
     enabled: true
     namespace: kyverno
+  backgroundScan:
+    enabled: true
+    backgroundScanWorkers: 2
+    backgroundScanInterval: 1h
+  admissionReports:
+    enabled: true
+  aggregateReports:
+    enabled: true
+  policyReports:
+    enabled: true
 
-metricsService:
+metricsConfig:
   create: true
-
-serviceMonitor:
-  enabled: false   # set true when Prometheus Operator is present

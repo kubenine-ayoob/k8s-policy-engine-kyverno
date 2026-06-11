@@ -140,9 +140,9 @@ Use Helm `namespaceSelector` or Kyverno **PolicyExceptions** for break-glass cas
 
 ---
 
-## Policies we tested but are NOT in baseline
+## Optional demo policies (not baseline)
 
-These were for learning only — not part of the default production set:
+Shipped under `policies/` for PoC learning only — not part of the 3-policy production baseline:
 
 | Policy | Type | Purpose |
 |--------|------|---------|

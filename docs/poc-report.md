@@ -20,7 +20,7 @@
 
 Kyverno v1.18.1 (chart 3.8.1) is installed and healthy on the intern cluster. All core controllers are Running with HA admission (3 replicas). Six ClusterPolicies are Ready. Baseline validate policies work in Audit mode; `require-labels` and `verify-image` work in Enforce mode as configured. Demo manifests behaved as expected.
 
-One non-blocking issue: Helm chart default cleanup CronJobs use `bitnami/kubectl:1.28.5`, which is not available on Docker Hub. Jobs failed with `ImagePullBackOff` until CronJobs were suspended and stuck Jobs deleted. Permanent fix: disable `cleanupJobs` in `install/values.yaml` (recommended for PoC) or override image tag.
+Historical note (chart ≤3.2.x): cleanup CronJobs used `bitnami/kubectl:1.28.5` and failed with `ImagePullBackOff`. Chart **3.8.1** replaces those CronJobs with the `cleanup-controller` Deployment — no `cleanupJobs` values key. If legacy CronJobs remain after upgrade, suspend and delete them.
 
 **Overall: GO** for intern/PoC with Audit baseline; **WAIT** on broad Enforce rollout; **NO-GO** for verify-images Enforce in prod until Cosign signing is in CI/CD.
 
@@ -34,7 +34,7 @@ One non-blocking issue: Helm chart default cleanup CronJobs use `bitnami/kubectl
 | All core pods Running in `kyverno` ns | PASS | 8 controllers: 3 admission, 2 background, 2 reports, 1 cleanup-controller |
 | Webhooks registered | PASS | `mutate.kyverno.svc-fail`, `validate.kyverno.svc-fail` |
 | CRDs present | PASS | e.g. `clusterpolicies.kyverno.io` |
-| Namespace exclusion | PASS | Only `kyverno` excluded via `config.webhooks.namespaceSelector` in `install/values.yaml` |
+| Namespace exclusion | PASS | `kube-system` in `config.webhooks.namespaceSelector`; `kyverno` via `config.excludeKyvernoNamespace: true` |
 | HA admission | PASS | `admissionController.replicas: 3` |
 | PolicyExceptions | PASS | `features.policyExceptions.enabled: true` |
 
@@ -44,7 +44,7 @@ One non-blocking issue: Helm chart default cleanup CronJobs use `bitnami/kubectl
 |-------|------------|
 | Chart `3.2.6` attempted downgrade from existing `3.8.1` | Pinned `helmfile.yaml` to `version: 3.8.1` |
 | Partial upgrade / TLS readiness errors | `helmfile sync` with chart 3.8.1 restored healthy state |
-| Cleanup CronJob `ImagePullBackOff` | Suspend CronJobs, delete stuck Jobs; disable `cleanupJobs` in values for permanent fix |
+| Cleanup CronJob `ImagePullBackOff` (legacy chart) | Suspend/delete legacy CronJobs; chart 3.8.1 uses `cleanup-controller` instead |
 
 ### Post-install pod inventory
 
@@ -151,31 +151,12 @@ Background scan confirms Audit policies are active. `bad-no-label` has no report
 
 ---
 
-## Cleanup CronJobs (non-blocking)
+## Cleanup (non-blocking)
 
 | Item | Detail |
 |------|--------|
-| Symptom | 5 CronJobs every 10m spawned Jobs with `ErrImagePull` / `ImagePullBackOff` |
-| Image | `bitnami/kubectl:1.28.5` (tag not found) |
-| Impact | Core Kyverno unaffected; noisy failed pods in `kyverno` namespace |
-| Mitigation applied | Suspend CronJobs; delete stuck Jobs |
-| Permanent fix | Add to `install/values.yaml`: |
-
-```yaml
-cleanupJobs:
-  admissionReports:
-    enabled: false
-  clusterAdmissionReports:
-    enabled: false
-  ephemeralReports:
-    enabled: false
-  clusterEphemeralReports:
-    enabled: false
-  updateRequests:
-    enabled: false
-```
-
-Then: `helmfile sync`
+| Chart 3.8.1 | TTL cleanup via `kyverno-cleanup-controller` Deployment (no `cleanupJobs` Helm key) |
+| Legacy issue (≤3.2.x) | `bitnami/kubectl` CronJobs could fail with `ImagePullBackOff` — suspend/delete if still present after upgrade |
 
 ---
 
@@ -183,7 +164,7 @@ Then: `helmfile sync`
 
 | Blocker | Severity | Status |
 |---------|----------|--------|
-| Cleanup CronJob default image tag missing | Low | Workaround applied; fix in values pending |
+| Legacy cleanup CronJob image pull (pre-3.8) | Low | Resolved on chart 3.8.1; delete stale CronJobs if present |
 | `require-labels` is Enforce (rollout plan prefers Audit for baseline) | Info | Documented; change to Audit before prod rollout if desired |
 | verify-images Enforce in prod | High for prod | Not a PoC blocker; needs Cosign in CI/CD |
 
@@ -198,7 +179,7 @@ Then: `helmfile sync`
 | `require-labels` Enforce | WAIT — switch to Audit first or burn down violations |
 | Broad Enforce rollout | WAIT — audit burn-down required |
 | verify-images Enforce | NO-GO — needs image signing pipeline (Cosign) |
-| Cleanup CronJobs with default chart image | NO-GO — disable or fix image tag in values |
+| Legacy cleanup CronJobs (pre-3.8 chart) | N/A on 3.8.1 — use `cleanup-controller`; remove stale CronJobs if upgraded in-place |
 | HA (3 admission replicas) | GO — configured in `install/values.yaml` |
 
 **Overall intern PoC: PASS**

@@ -7,7 +7,7 @@
 5. **Namespaces are created by Helmfile** — the release sets `createNamespace: true` (idempotent, re-sync-safe). The test namespace `ayoob-kyverno` is created separately for PoC demos.
 6. Apply policies with `kubectl apply -f policies/` **after** Kyverno is Running.
 7. Start all baseline validate policies in **Audit** mode — never switch all policies to Enforce at once.
-8. The `kyverno` namespace is excluded via Helm webhook `namespaceSelector` — do not remove without platform approval.
+8. Webhook exclusions: `kube-system` and `kyverno` ns (chart `excludeKyvernoNamespace`) — do not remove without platform approval.
 9. Stuck? [Kyverno docs](https://kyverno.io/docs/) · `docs/complete-guide.md` · `docs/runbook.md` · ask the user
 
 ---
@@ -22,7 +22,7 @@ Deploy **Kyverno** — a Kubernetes-native policy engine — on **Civo K3s** to 
 | Production target | `kubenine` |
 | Kubernetes | k3s `v1.34.2+k3s1` |
 | Kyverno app | `v1.18.1` |
-| Helm chart | `kyverno/kyverno` `3.2.6` |
+| Helm chart | `kyverno/kyverno` `3.8.1` |
 | Kyverno namespace | `kyverno` |
 | Test namespace | `ayoob-kyverno` (PoC demos only) |
 | Baseline policies | `require-labels`, `require-requests-limits`, `disallow-privileged-containers` |
@@ -68,7 +68,7 @@ kubectl create namespace ayoob-kyverno --dry-run=client -o yaml | kubectl apply 
 
 **Install method: Helm chart** (via Helmfile). Do not install Kyverno with raw manifests or unpinned `helm install` without values.
 
-`kyverno/kyverno` chart `3.2.6`: admission controller (3 replicas) + background controller + reports controller + cleanup controller. Namespace exclusions and PolicyExceptions enabled in `install/values.yaml`.
+`kyverno/kyverno` chart `3.8.1`: admission controller (3 replicas) + background controller + reports controller + cleanup controller. Webhook exclusions: `kube-system` + `kyverno` (via `excludeKyvernoNamespace`). PolicyExceptions enabled in `install/values.yaml`.
 
 From `k8-extended/kyverno/`:
 
@@ -181,6 +181,7 @@ Fill `docs/poc-report.md`: chart version, Kyverno app version, cluster context, 
 ```
 kyverno/
 ├── CLAUDE.md              ← you are here (agent entry point)
+├── AGENTS.md              → CLAUDE.md
 ├── helmfile.yaml          # kyverno release; creates kyverno ns itself
 ├── install/
 │   └── values.yaml        # HA replicas, namespace exclusions, metrics

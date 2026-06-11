@@ -172,14 +172,14 @@ Kyverno sits in the **request path**. If Kyverno is down:
 | Install Kyverno | **Ready** | Works on our k3s test cluster |
 | Audit mode policies | **Ready now** | Safe to deploy — logs violations, does not block |
 | Enforce mode | **Ready after 2–4 weeks** | Need violation burn-down first |
-| High availability | **Not ready** | Test cluster has 1 replica — prod needs 2+ |
+| High availability | **Ready in values** | `install/values.yaml` sets 3 admission replicas — apply with `helmfile sync` |
 | Image verification | **Not ready** | Needs Cosign signing in CI/CD pipeline |
-| Namespace exclusions | **Needs decision** | Which namespaces to skip? |
+| Namespace exclusions | **Partial** | `kube-system` + `kyverno` excluded; review per-env namespaces |
 
 ### Overall verdict
 
 > **Kyverno is ready for Audit mode in production today.**
-> Enforce mode is ready after teams fix violations and we add HA.
+> Enforce mode is ready after teams fix violations; HA is configured in values (apply via `helmfile sync`).
 > Full supply-chain security (verifyImages) needs a signing pipeline first.
 
 ---

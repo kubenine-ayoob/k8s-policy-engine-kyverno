@@ -32,8 +32,9 @@ Week 6:   Enforce require-requests-limits
 
 - [x] Install Kyverno with Helm in `kyverno` namespace
 - [x] Apply 3 baseline policies in **Audit** mode
-- [ ] Set admission controller to **2 replicas** (HA) — currently 1 replica on test cluster
-- [ ] Exclude system namespaces (`kube-system`, `kyverno`, `cert-manager`, `ingress-nginx`)
+- [x] Set admission controller to **3 replicas** (HA) — configured in `install/values.yaml`; apply with `helmfile sync`
+- [x] Exclude system namespaces (`kube-system` via webhook selector; `kyverno` via `excludeKyvernoNamespace`)
+- [ ] Confirm additional exclusions (`cert-manager`, `ingress-nginx`) via PolicyExceptions if needed
 - [ ] Review PolicyReports every week
 
 ### Commands

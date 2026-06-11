@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: good-pod
+  name: bad-run-as-root
   namespace: ayoob-kyverno
   labels:
     app.kubernetes.io/name: demo
 spec:
-  securityContext:
-    runAsNonRoot: true
   containers:
   - name: nginx
-    image: nginxinc/nginx-unprivileged:1.25
+    image: nginx:1.25
+    securityContext:
+      runAsNonRoot: false
     resources:
       requests:
         cpu: 100m

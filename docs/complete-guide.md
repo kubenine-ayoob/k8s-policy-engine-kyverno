@@ -14,7 +14,7 @@ policies work, how to install, configure, operate, troubleshoot, and roll out to
 | **Last updated** | 2026-06-08 |
 | **Tested cluster** | k3s `v1.34.2+k3s1` |
 | **Tested Kyverno** | `v1.18.1` |
-| **Helm chart** | `kyverno/kyverno` `3.2.6` |
+| **Helm chart** | `kyverno/kyverno` `3.8.1` |
 | **Maintainer** | Platform Engineering |
 | **Audience** | DevOps Engineers, Platform Engineers, SREs, AI Agents |
 
@@ -695,7 +695,7 @@ kubectl config use-context kubenine-intern
 helmfile sync
 ```
 
-> Pin the Helm chart version in `helmfile.yaml`. Chart `3.2.6` deploys Kyverno `v1.18.1`. Verify compatibility at [Kyverno releases](https://github.com/kyverno/kyverno/releases).
+> Pin the Helm chart version in `helmfile.yaml`. Chart `3.8.1` deploys Kyverno `v1.18.1`. Verify compatibility at [Kyverno releases](https://github.com/kyverno/kyverno/releases).
 
 Alternative direct Helm install (not used in this repo):
 
@@ -705,7 +705,7 @@ helm repo update
 helm install kyverno kyverno/kyverno \
   --namespace kyverno \
   --create-namespace \
-  --version 3.2.6 \
+  --version 3.8.1 \
   -f install/values.yaml
 ```
 
@@ -745,62 +745,12 @@ helm uninstall kyverno -n kyverno
 
 ### Recommended Helm values
 
-Create `install/values.yaml`:
+Use the full file at `install/values.yaml` (chart `3.8.1`). Key points:
 
-```yaml
-admissionController:
-  replicas: 3
-  resources:
-    requests:
-      cpu: 200m
-      memory: 256Mi
-    limits:
-      memory: 512Mi
-  podAntiAffinity:
-    preferredDuringSchedulingIgnoredDuringExecution:
-    - weight: 100
-      podAffinityTerm:
-        labelSelector:
-          matchLabels:
-            app.kubernetes.io/component: admission-controller
-        topologyKey: kubernetes.io/hostname
-
-backgroundController:
-  replicas: 2
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      memory: 256Mi
-
-reportsController:
-  replicas: 2
-
-cleanupController:
-  replicas: 1
-
-config:
-  # Webhook namespace exclusions — see Section 12
-  webhooks:
-    namespaceSelector:
-      matchExpressions:
-      - key: kubernetes.io/metadata.name
-        operator: NotIn
-        values:
-        - kyverno
-
-features:
-  policyExceptions:
-    enabled: true
-    namespace: kyverno
-
-metricsService:
-  create: true
-
-serviceMonitor:
-  enabled: false   # set true when Prometheus Operator is present
-```
+- **Webhook exclusions:** `kube-system` in `config.webhooks.namespaceSelector`; `kyverno` ns via `config.excludeKyvernoNamespace: true`
+- **Metrics:** `metricsService` / `serviceMonitor` nest under each controller (`admissionController`, etc.) — root-level keys are ignored by chart 3.8.x
+- **failurePolicy:** `Fail` (chart default); mitigate with 3 admission replicas + PDB — do not use `features.forceFailurePolicyIgnore` except emergencies
+- **Cleanup:** chart 3.8.x uses `cleanup-controller` Deployment; there is no `cleanupJobs` key (that was chart 3.2.x)
 
 Install with Helmfile (preferred in this repo):
 
@@ -1838,7 +1788,7 @@ curl -s localhost:8000/metrics | grep kyverno_policy
 | Install Kyverno | Ready | Validated on k3s v1.34.2 |
 | Audit mode policies | Ready | Safe to deploy |
 | Enforce mode | Pending | Requires 2–4 week burn-down |
-| High availability | Not ready | Test cluster has 1 replica |
+| High availability | Ready (values) | `install/values.yaml` sets 3 admission replicas; run `helmfile sync` to apply |
 | Image verification | Not ready | Needs Cosign in CI/CD |
 | Namespace exclusions | Needs decision | Confirm monitoring/logging NS |
 
